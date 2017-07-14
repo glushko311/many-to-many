@@ -1,0 +1,48 @@
+{% extends "::base.html.twig" %}
+{% block body%}
+    <style type="text/css">
+        .members-cont{
+            width: 220px;
+            border:1px #000 solid;
+        }
+        .members-diff-cont{
+            display:flex;
+            flex-direction:column;
+            border:1px #000 solid;
+            width: 100px;
+            justify-content:space-arround;
+            align-items:center
+        }
+        .member-diff-id{
+            display: none;
+        }
+        .member-diff-name{
+            width: 100px;
+            height: 30px;
+            display:flex;
+            cursor:pointer;
+            margin:2px;
+            background:#999;
+        }
+        .members-cont p{
+            text-align: center;
+        }
+    </style>
+{{ dump(track) }}
+
+{{ dump(membersDiff) }}
+{{ dump(membersInTrack) }}
+<div class="members-cont"></div>
+    <div class="members-diff-cont">
+        <p>Добавить в маршрут</p>
+        {% for memberDiff in membersDiff %}
+            <div class="member-diff-item">
+                <p class='member-diff-name'>{{ memberDiff.name }}</p>
+                <p class="member-diff-id">{{ memberDiff.id }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+
+{% endblock %}
+

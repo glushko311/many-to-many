@@ -1,0 +1,46 @@
+<?php
+/**
+ * Created by JetBrains PhpStorm.
+ * User: php
+ * Date: 7/13/17
+ * Time: 5:15 PM
+ * To change this template use File | Settings | File Templates.
+ */
+
+namespace TrackBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use TrackBundle\Entity\Track;
+
+/**
+ * Class Member
+ * @package TrackBundle\Entity
+ * @ORM\Table(name="member")
+ * @ORM\Entity
+ */
+class Member {
+    /**
+     * @ORM\Column(type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+
+    /**
+     * @ORM\Column(type="text")
+     */
+    private $name;
+
+    /**
+     * Many Members have Many Tracks.
+     * @ORM\ManyToMany(targetEntity="Track", mappedBy="members")
+     */
+    private $tracks;
+
+    public function __construct(){
+        $this->tracks = new ArrayCollection();
+    }
+
+}
