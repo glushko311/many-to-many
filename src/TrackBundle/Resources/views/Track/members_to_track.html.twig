@@ -60,3 +60,19 @@
 
 {% endblock %}
 
+{% block javascripts %}
+    <script src="{{ asset('js/jquery-3.2.1.min.js') }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('.track-cont>.member-item').on('click',function(){
+                $('.diff-cont').append($(this).clone());
+                $(this).remove();
+            })
+            $('.diff-cont>.member-item').on('click',function(){
+                $('.track-cont').append($(this).clone());
+                $(this).remove();
+            })
+        })
+    </script>
+{% endblock %}
+
