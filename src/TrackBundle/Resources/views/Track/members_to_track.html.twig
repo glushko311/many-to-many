@@ -4,8 +4,10 @@
         .members-cont{
             width: 220px;
             border:1px #000 solid;
+            display:flex;
+            justify-content:space-between;
         }
-        .members-diff-cont{
+        .members-item-cont{
             display:flex;
             flex-direction:column;
             border:1px #000 solid;
@@ -13,10 +15,10 @@
             justify-content:space-arround;
             align-items:center
         }
-        .member-diff-id{
+        .member-item-id{
             display: none;
         }
-        .member-diff-name{
+        .member-item-name{
             width: 100px;
             height: 30px;
             display:flex;
@@ -32,16 +34,28 @@
 
 {{ dump(membersDiff) }}
 {{ dump(membersInTrack) }}
-<div class="members-cont"></div>
-    <div class="members-diff-cont">
+<div class="members-cont">
+    <div class="members-item-cont diff-cont">
         <p>Добавить в маршрут</p>
         {% for memberDiff in membersDiff %}
-            <div class="member-diff-item">
-                <p class='member-diff-name'>{{ memberDiff.name }}</p>
-                <p class="member-diff-id">{{ memberDiff.id }}</p>
+            <div class="member-item">
+                <p class='member-item-name'>{{ memberDiff.name }}</p>
+                <p class="member-item-id">{{ memberDiff.id }}</p>
             </div>
         {% endfor %}
     </div>
+
+    <div class="members-item-cont track-cont">
+        <p>Добавить в маршрут</p>
+        {% for memberInTrack in membersInTrack %}
+            <div class="member-item">
+                <p class='member-item-name'>{{ memberInTrack.name }}</p>
+                <p class="member-item-id">{{ memberInTrack.id }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
 
 
 {% endblock %}
