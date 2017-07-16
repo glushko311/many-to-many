@@ -2,7 +2,7 @@
 {% block body%}
     <style type="text/css">
         .members-cont{
-            width: 220px;
+            width: 330px;
             border:1px #000 solid;
             display:flex;
             justify-content:space-between;
@@ -29,6 +29,18 @@
         .members-cont p{
             text-align: center;
         }
+        .submit-member-to-track{
+            width: 100px;
+            height: 60px;
+            cursor:pointer;
+            display:flex;
+            align-items: center;
+            justify-content: center;
+            border:1px solid #000;
+        }
+        .submit-member-to-track:hover{
+            background: yellow;
+        }
     </style>
 {{ dump(track) }}
 
@@ -46,7 +58,7 @@
     </div>
 
     <div class="members-item-cont track-cont">
-        <p>Добавить в маршрут</p>
+        <p>Убрать из маршрута</p>
         {% for memberInTrack in membersInTrack %}
             <div class="member-item">
                 <p class='member-item-name'>{{ memberInTrack.name }}</p>
@@ -54,7 +66,9 @@
             </div>
         {% endfor %}
     </div>
+    <div class ="submit-member-to-track"><p>Обновить учасников</p></div>
 </div>
+<h3 class="content"></h3>
 
 
 
@@ -64,14 +78,47 @@
     <script src="{{ asset('js/jquery-3.2.1.min.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
-            $('.track-cont>.member-item').on('click',function(){
-                $('.diff-cont').append($(this).clone());
+            function diffClickHandler(){
+                var el = $(this).clone().bind('click', trackClickHandler)
+                $('.track-cont').append(el);
                 $(this).remove();
-            })
-            $('.diff-cont>.member-item').on('click',function(){
-                $('.track-cont').append($(this).clone());
+
+            }
+            function trackClickHandler(){
+                var el = $(this).clone().bind('click', diffClickHandler);
+                $('.diff-cont').append(el);
                 $(this).remove();
-            })
+            }
+
+            function loadData(){
+                var dataArrJQ = $('.track-cont>.member-item>.member-item-id');
+                var dataArr=[];
+                for(var i = 0; i < dataArrJQ.length; i++){
+                    dataArr[i] = $(dataArrJQ[i]).html();
+                }
+                dataArr = JSON.stringify(dataArr);
+                console.log(dataArr);
+
+
+                $.ajax({
+                    type:'POST'
+                    ,url: ""
+                    , data:dataArr
+                    , success: function(res) {
+                        console.log('ajax send - OK');
+                        console.log(res);
+                    }
+                });
+
+            }
+
+            $('.track-cont>.member-item').bind('click', trackClickHandler);
+            $('.diff-cont>.member-item').bind('click', diffClickHandler);
+
+
+            $('.submit-member-to-track').bind('click', loadData);
+
+
         })
     </script>
 {% endblock %}

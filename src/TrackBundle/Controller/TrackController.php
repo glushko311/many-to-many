@@ -40,7 +40,7 @@ class TrackController  extends Controller{
      *  "track_id":"\d+"
      * }
      * )
-     * @Method({"GET", "POST"})
+     * @Method({"GET"})
      */
     public function addMembersToTrackAction($track_id, Request $request){
         $em = $this->getDoctrine();
@@ -64,12 +64,18 @@ class TrackController  extends Controller{
             }
 
         }
-        $addMembers =$request->request->get('add_members');
-        if(!empty($addMembers)){
-            var_dump($addMembers);
-            echo '<br>';
-            var_dump($_GET['add_members']);
-            die;
+//        $addMembers =$request->request->get('add_members');
+//        if(!empty($addMembers)){
+//            var_dump($addMembers);
+//            echo '<br>';
+//            var_dump($_GET['add_members']);
+//            die;
+//
+//        }
+        if(!empty($_POST['dataArr'])){
+
+
+            echo 'All OK';
 
         }
 
@@ -79,4 +85,20 @@ class TrackController  extends Controller{
             'membersInTrack'=> $membersInTrack,
         ]);
     }
+
+    /**
+     * @ROUTE(
+     * "/track/{track_id}/add_members",
+     * requirements={
+     *  "track_id":"\d+"
+     * }
+     * )
+     * @Method({"POST"})
+     */
+   public function addMembersAjax($track_id, Request $request){
+       echo ('Привет я AJAX<br>');
+       $res = json_decode($_POST['dataArr'],true);
+       var_dump($res);
+       die;
+   }
 }
