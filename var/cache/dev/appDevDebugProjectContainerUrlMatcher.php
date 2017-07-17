@@ -144,7 +144,7 @@ class appDevDebugProjectContainerUrlMatcher extends Symfony\Bundle\FrameworkBund
                     goto not_track_track_addmembersajax;
                 }
 
-                return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_addmembersajax')), array (  '_controller' => 'TrackBundle\\Controller\\TrackController::addMembersAjax',));
+                return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_addmembersajax')), array (  '_controller' => 'TrackBundle\\Controller\\TrackController::addMembersAjaxAction',));
             }
             not_track_track_addmembersajax:
 

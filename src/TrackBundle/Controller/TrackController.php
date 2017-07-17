@@ -64,20 +64,7 @@ class TrackController  extends Controller{
             }
 
         }
-//        $addMembers =$request->request->get('add_members');
-//        if(!empty($addMembers)){
-//            var_dump($addMembers);
-//            echo '<br>';
-//            var_dump($_GET['add_members']);
-//            die;
-//
-//        }
-        if(!empty($_POST['dataArr'])){
 
-
-            echo 'All OK';
-
-        }
 
         return $this->render("TrackBundle:Track:members_to_track.html.twig",[
             'track'=>$track,
@@ -95,10 +82,29 @@ class TrackController  extends Controller{
      * )
      * @Method({"POST"})
      */
-   public function addMembersAjax($track_id, Request $request){
-       echo ('Привет я AJAX<br>');
-       $res = json_decode($_POST['dataArr'],true);
-       var_dump($res);
-       die;
+   public function addMembersAjaxAction($track_id, Request $request){
+       $data = $request->request->get('jsonData');
+       $res = json_decode($data,true);
+
+       $em = $this->getDoctrine();
+       $trackRepo = $em->getRepository('TrackBundle:Track');
+       $track = $trackRepo->find($track_id);
+
+       $memsInTrack = $track->getMembers();
+       foreach($memsInTrack as $memInTrack){
+           $track->removeMember($memInTrack);
+       }
+
+       $members = [];
+       foreach($res as $member_id){
+           $memberRepo = $em->getRepository('TrackBundle:Member');
+           $member = $memberRepo->find($member_id);
+           $track->addMember($member);
+       };
+       $em = $em->getManager();
+       $em->persist($track);
+       $em->flush();
+
+       return $this->render('TrackBundle:Track:success.html.twig');
    }
 }

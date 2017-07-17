@@ -68,7 +68,7 @@
     </div>
     <div class ="submit-member-to-track"><p>Обновить учасников</p></div>
 </div>
-<h3 class="content"></h3>
+<div class="content-message"></div>
 
 
 
@@ -76,6 +76,7 @@
 
 {% block javascripts %}
     <script src="{{ asset('js/jquery-3.2.1.min.js') }}"></script>
+    <script src="{{ asset('js/jquery.json.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
             function diffClickHandler(){
@@ -96,17 +97,15 @@
                 for(var i = 0; i < dataArrJQ.length; i++){
                     dataArr[i] = $(dataArrJQ[i]).html();
                 }
-                dataArr = JSON.stringify(dataArr);
-                console.log(dataArr);
 
+                dataArr = 'jsonData=' + $.toJSON(dataArr);
 
                 $.ajax({
                     type:'POST'
                     ,url: ""
                     , data:dataArr
                     , success: function(res) {
-                        console.log('ajax send - OK');
-                        console.log(res);
+                        $('.content-message').append(res);
                     }
                 });
 
