@@ -1,0 +1,21 @@
+{% extends "::base.html.twig" %}
+{% block body%}
+    <style type="text/css">
+        form{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:space-between;
+        }
+    </style>
+
+    <form action="" method="post">
+        <h2>Создание нового трека</h2>
+        <label for="track">Нитка маршрута</label>
+        <textarea name="track" id="textarea-track-load-195" cols="30" rows="10"></textarea>
+        <button type="submit">Создать новый трек</button>
+        <h3>{{ message }}</h3>
+    </form>
+
+{% endblock %}
+

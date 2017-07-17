@@ -35,4 +35,22 @@ class TrackRepository extends EntityRepository{
 
         return 1;
     }
+
+    public function prepareMembersToLoadInView($members, $membersInTrack){
+        $membersDif=[];
+        foreach($members as $member){
+            $isInTrack = false;
+            foreach($membersInTrack as $trackMember){
+                if($member==$trackMember){
+                    $isInTrack = true;
+                    break;
+                }
+            }
+            if(!$isInTrack){
+                $membersDif[] = $member;
+            }
+
+        }
+        return $membersDif;
+    }
 }

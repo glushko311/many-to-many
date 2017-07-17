@@ -42,7 +42,7 @@ class TrackController  extends Controller{
      * )
      * @Method({"GET"})
      */
-    public function addMembersToTrackAction($track_id, Request $request){
+    public function addMembersToTrackAction($track_id){
         $em = $this->getDoctrine();
         $trackRepo = $em->getRepository("TrackBundle:Track");
         $track = $trackRepo->find($track_id);
@@ -50,20 +50,8 @@ class TrackController  extends Controller{
 
         $membersRepo = $em->getRepository("TrackBundle:Member");
         $members = $membersRepo->findAll();
-        $membersDif=[];
-        foreach($members as $member){
-            $isInTrack = false;
-            foreach($membersInTrack as $trackMember){
-                if($member==$trackMember){
-                    $isInTrack = true;
-                    break;
-                }
-            }
-            if(!$isInTrack){
-                $membersDif[] = $member;
-            }
 
-        }
+        $membersDif =  $trackRepo->prepareMembersToLoadInView($members, $membersInTrack);
 
 
         return $this->render("TrackBundle:Track:members_to_track.html.twig",[
@@ -96,4 +84,31 @@ class TrackController  extends Controller{
 
        return $this->render('TrackBundle:Track:success.html.twig');
    }
+
+    /**
+     * @ROUTE(
+     * "/admin/loadtrack"
+     * )
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function loadTrackAction(Request $request){
+        $trackWay = $request->request->get('track');
+        $message = '';
+        if(!empty($trackWay)){
+            $em = $this->getDoctrine()->getManager();
+
+            $track = new Track;
+            $track->setTrack($trackWay);
+
+            $em->persist($track);
+            $em->flush();
+            $message = 'Новый трек был создан успешно';
+
+        }
+
+
+        return $this->render('TrackBundle:Track:load_track.html.twig', ['message'=>$message]);
+
+    }
 }
