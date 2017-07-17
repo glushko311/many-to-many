@@ -17,6 +17,7 @@ use TrackBundle\Entity\Member;
  * @package TrackBundle\Entity
  * @ORM\Table(name="track")
  * @ORM\Entity
+ * @ORM\Entity(repositoryClass="TrackBundle\Repositories\TrackRepository")
  */
 class Track {
     /**

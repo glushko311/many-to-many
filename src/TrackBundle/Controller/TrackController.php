@@ -84,26 +84,15 @@ class TrackController  extends Controller{
      */
    public function addMembersAjaxAction($track_id, Request $request){
        $data = $request->request->get('jsonData');
-       $res = json_decode($data,true);
+       $membersIdArr = json_decode($data,true);
 
        $em = $this->getDoctrine();
        $trackRepo = $em->getRepository('TrackBundle:Track');
+
        $track = $trackRepo->find($track_id);
 
-       $memsInTrack = $track->getMembers();
-       foreach($memsInTrack as $memInTrack){
-           $track->removeMember($memInTrack);
-       }
+       $trackRepo->updateMembersById($track, $em, $membersIdArr);
 
-       $members = [];
-       foreach($res as $member_id){
-           $memberRepo = $em->getRepository('TrackBundle:Member');
-           $member = $memberRepo->find($member_id);
-           $track->addMember($member);
-       };
-       $em = $em->getManager();
-       $em->persist($track);
-       $em->flush();
 
        return $this->render('TrackBundle:Track:success.html.twig');
    }
