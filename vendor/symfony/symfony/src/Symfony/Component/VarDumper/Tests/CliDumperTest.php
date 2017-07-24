@@ -11,17 +11,14 @@
 
 namespace Symfony\Component\VarDumper\Tests;
 
-use PHPUnit\Framework\TestCase;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\CliDumper;
 use Symfony\Component\VarDumper\Test\VarDumperTestTrait;
-use Twig\Environment;
-use Twig\Loader\FilesystemLoader;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class CliDumperTest extends TestCase
+class CliDumperTest extends \PHPUnit_Framework_TestCase
 {
     use VarDumperTestTrait;
 
@@ -232,14 +229,14 @@ EOTXT
     }
 
     /**
-     * @requires function Twig\Template::getSourceContext
+     * @requires function Twig_Template::getSourceContext
      */
     public function testThrowingCaster()
     {
         $out = fopen('php://memory', 'r+b');
 
         require_once __DIR__.'/Fixtures/Twig.php';
-        $twig = new \__TwigTemplate_VarDumperFixture_u75a09(new Environment(new FilesystemLoader()));
+        $twig = new \__TwigTemplate_VarDumperFixture_u75a09(new \Twig_Environment(new \Twig_Loader_Filesystem()));
 
         $dumper = new CliDumper();
         $dumper->setColors(false);
@@ -255,11 +252,12 @@ EOTXT
             ':stream' => eval('return function () use ($twig) {
                 try {
                     $twig->render(array());
-                } catch (\Twig\Error\RuntimeError $e) {
+                } catch (\Twig_Error_Runtime $e) {
                     throw $e->getPrevious();
                 }
             };'),
         ));
+        $line = __LINE__ - 2;
         $ref = (int) $out;
 
         $data = $cloner->cloneVar($out);
@@ -281,7 +279,7 @@ stream resource {@{$ref}
       %sTemplate.php:%d: {
         : try {
         :     \$this->doDisplay(\$context, \$blocks);
-        : } catch (Twig%sError \$e) {
+        : } catch (Twig_Error \$e) {
       }
       %sTemplate.php:%d: {
         : {
@@ -293,8 +291,10 @@ stream resource {@{$ref}
         :     \$this->display(\$context);
         : } catch (%s \$e) {
       }
-      %sCliDumperTest.php:%d: {
-%A
+      %sCliDumperTest.php:{$line}: {
+        :         }
+        :     };'),
+        : ));
       }
     }
   }
@@ -417,7 +417,7 @@ EOTXT
      */
     public function testBuggyRefs()
     {
-        if (\PHP_VERSION_ID >= 50600) {
+        if (PHP_VERSION_ID >= 50600) {
             $this->markTestSkipped('PHP 5.6 fixed refs counting');
         }
 

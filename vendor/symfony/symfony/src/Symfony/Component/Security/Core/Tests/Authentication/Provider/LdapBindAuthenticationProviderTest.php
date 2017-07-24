@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Security\Core\Tests\Authentication\Provider;
 
-use PHPUnit\Framework\TestCase;
 use Symfony\Component\Ldap\LdapInterface;
 use Symfony\Component\Security\Core\Authentication\Provider\LdapBindAuthenticationProvider;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -23,7 +22,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 /**
  * @requires extension ldap
  */
-class LdapBindAuthenticationProviderTest extends TestCase
+class LdapBindAuthenticationProviderTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @expectedException        \Symfony\Component\Security\Core\Exception\BadCredentialsException
@@ -32,7 +31,7 @@ class LdapBindAuthenticationProviderTest extends TestCase
     public function testEmptyPasswordShouldThrowAnException()
     {
         $userProvider = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserProviderInterface')->getMock();
-        $ldap = $this->getMockBuilder(LdapInterface::class)->getMock();
+        $ldap = $this->getMockBuilder('Symfony\Component\Ldap\LdapClientInterface')->getMock();
         $userChecker = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserCheckerInterface')->getMock();
 
         $provider = new LdapBindAuthenticationProvider($userProvider, $userChecker, 'key', $ldap);

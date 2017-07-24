@@ -128,7 +128,7 @@
         <service id="translation.writer" class="Symfony\Component\Translation\Writer\TranslationWriter"/>
 
         <service id="translation.warmer" class="Symfony\Bundle\FrameworkBundle\CacheWarmer\TranslationsCacheWarmer" public="false">
-            <argument type="service" id="service_container" />
+            <argument type="service" id="translator" />
             <tag name="kernel.cache_warmer" />
         </service>
 

@@ -166,7 +166,7 @@ class PhpDumper extends Dumper
             }
         }
         if ($unusedEnvs) {
-            throw new EnvParameterException($unusedEnvs, null, 'Environment variables "%s" are never used. Please, check your container\'s configuration.');
+            throw new EnvParameterException($unusedEnvs);
         }
 
         return $code;
@@ -632,7 +632,7 @@ EOF;
         }
 
         if ($definition->isAutowired()) {
-            $doc .= <<<EOF
+            $doc = <<<EOF
 
      *
      * This service is autowired.
@@ -772,7 +772,7 @@ EOF;
     private function startClass($class, $baseClass, $namespace)
     {
         $bagClass = $this->container->isFrozen() ? 'use Symfony\Component\DependencyInjection\ParameterBag\FrozenParameterBag;' : 'use Symfony\Component\DependencyInjection\ParameterBag\\ParameterBag;';
-        $namespaceLine = $namespace ? "\nnamespace $namespace;\n" : '';
+        $namespaceLine = $namespace ? "namespace $namespace;\n" : '';
 
         return <<<EOF
 <?php
@@ -855,7 +855,6 @@ EOF;
 
         $code .= "\n        \$this->services = array();\n";
         $code .= $this->addMethodMap();
-        $code .= $this->addPrivateServices();
         $code .= $this->addAliases();
 
         $code .= <<<'EOF'
@@ -964,7 +963,11 @@ EOF;
     private function addAliases()
     {
         if (!$aliases = $this->container->getAliases()) {
-            return $this->container->isFrozen() ? "\n        \$this->aliases = array();\n" : '';
+            if ($this->container->isFrozen()) {
+                return "\n        \$this->aliases = array();\n";
+            } else {
+                return '';
+            }
         }
 
         $code = "        \$this->aliases = array(\n";
@@ -1191,15 +1194,7 @@ EOF;
 
         $conditions = array();
         foreach ($services as $service) {
-            if ($this->container->hasDefinition($service) && !$this->container->getDefinition($service)->isPublic()) {
-                continue;
-            }
-
             $conditions[] = sprintf("\$this->has('%s')", $service);
-        }
-
-        if (!$conditions) {
-            return $code;
         }
 
         // re-indent the wrapped code
@@ -1357,11 +1352,8 @@ EOF;
             if (null !== $this->definitionVariables && $this->definitionVariables->contains($value)) {
                 return $this->dumpValue($this->definitionVariables->offsetGet($value), $interpolate);
             }
-            if ($value->getMethodCalls()) {
+            if (count($value->getMethodCalls()) > 0) {
                 throw new RuntimeException('Cannot dump definitions which have method calls.');
-            }
-            if ($value->getProperties()) {
-                throw new RuntimeException('Cannot dump definitions which have properties.');
             }
             if (null !== $value->getConfigurator()) {
                 throw new RuntimeException('Cannot dump definitions which have a configurator.');
@@ -1434,9 +1426,9 @@ EOF;
             }
         } elseif (is_object($value) || is_resource($value)) {
             throw new RuntimeException('Unable to dump a service container if a parameter is an object or a resource.');
+        } else {
+            return $this->export($value);
         }
-
-        return $this->export($value);
     }
 
     /**
@@ -1497,13 +1489,13 @@ EOF;
         }
         if (null !== $reference && ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE !== $reference->getInvalidBehavior()) {
             return sprintf('$this->get(\'%s\', ContainerInterface::NULL_ON_INVALID_REFERENCE)', $id);
-        }
+        } else {
+            if ($this->container->hasAlias($id)) {
+                $id = (string) $this->container->getAlias($id);
+            }
 
-        if ($this->container->hasAlias($id)) {
-            $id = (string) $this->container->getAlias($id);
+            return sprintf('$this->get(\'%s\')', $id);
         }
-
-        return sprintf('$this->get(\'%s\')', $id);
     }
 
     /**

@@ -150,11 +150,6 @@ class appDevDebugProjectContainerUrlMatcher extends Symfony\Bundle\FrameworkBund
 
         }
 
-        // track_track_loadtrack
-        if ($pathinfo === '/admin/loadtrack') {
-            return array (  '_controller' => 'TrackBundle\\Controller\\TrackController::loadTrackAction',  '_route' => 'track_track_loadtrack',);
-        }
-
         // homepage
         if (rtrim($pathinfo, '/') === '') {
             if (substr($pathinfo, -1) !== '/') {

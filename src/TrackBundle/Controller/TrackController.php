@@ -14,6 +14,15 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\Request;
 use TrackBundle\Entity\Track;
 
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Vich\UploaderBundle\Form\Type\VichImageType;
+//use Doctrine\ORM\QueryBuilder;
+
+
+
 class TrackController  extends Controller{
 
     /**
@@ -26,10 +35,39 @@ class TrackController  extends Controller{
      * @Method({"GET", "POST"})
      */
     public function showTrackAction($track_id){
-        $em = $this->getDoctrine();
-        $trackRepo = $em->getRepository("TrackBundle:Track");
-        $track = $trackRepo->find($track_id);
 
+
+       // use getEntityManager !deprecated
+//        $em = $this->getDoctrine();
+//        $qb = $em->getEntityManager()->createQueryBuilder()->select('t')->from('TrackBundle:Track', 't')->where('t.id = 1')->getQuery();
+//        $track = $qb->getSingleResult();
+       // use getEntityManager !deprecated
+
+        //use simple function
+//        $em = $this->getDoctrine();
+//        $trackRepo = $em->getRepository("TrackBundle:Track");
+//        $track = $trackRepo->find($track_id);
+        //use simple function
+
+
+        //use getEntityManager and createQuery !deprecated
+//        $track = $this->getDoctrine()->getEntityManager()
+//            ->createQuery('SELECT p FROM TrackBundle:Track p WHERE p.id ='.$track_id)->execute()[0];
+        //use getEntityManager and createQuery !deprecated
+
+
+        //use getManager and createQuery
+//        $track = $this->getDoctrine()->getManager()
+//            ->createQuery('SELECT p FROM TrackBundle:Track p WHERE p.id ='.$track_id)->execute()[0];//getResult()[0]
+        //use getManager and createQuery
+
+        //use getManager
+        $em = $this->getDoctrine()->getManager();
+        $qb = $em->getRepository('TrackBundle:Track')->createQueryBuilder('t')->where('t.id ='.$track_id)->getQuery();
+        $track = $qb->getSingleResult();
+        //use getManager
+
+        //var_dump($track->getId());
         return $this->render("TrackBundle:Track:show_track.html.twig", ['track'=>$track]);
     }
 
@@ -85,30 +123,33 @@ class TrackController  extends Controller{
        return $this->render('TrackBundle:Track:success.html.twig');
    }
 
-    /**
-     * @ROUTE(
-     * "/admin/loadtrack"
-     * )
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function loadTrackAction(Request $request){
-        $trackWay = $request->request->get('track');
-        $message = '';
-        if(!empty($trackWay)){
-            $em = $this->getDoctrine()->getManager();
+//    /**
+//     * @ROUTE(
+//     * "/admin/loadtrack"
+//     * )
+//     * @param Request $request
+//     * @return \Symfony\Component\HttpFoundation\Response
+//     */
+//    public function loadTrackAction(Request $request){
+//        $trackWay = $request->request->get('track');
+//        $message = '';
+//
+//        $track = new Track();
+////        $track->setTask('Write a blog post');
+////        $task->setDueDate(new \DateTime('tomorrow'));
+//
+//        $form = $this->createFormBuilder($track)
+//        ->add('track', TextType::class)
+//        ->add('track_file', VichImageType::class)
+//        ->add('save', SubmitType::class, array('label' => 'Create new track'))
+//        ->getForm();
+//
+//        return $this->render('TrackBundle:Track:load_track.html.twig', array(
+//            'form' => $form->createView(),
+//        ));
 
-            $track = new Track;
-            $track->setTrack($trackWay);
 
-            $em->persist($track);
-            $em->flush();
-            $message = 'Новый трек был создан успешно';
+       // return $this->render('TrackBundle:Track:load_track.html.twig', ['message'=>$message]);
 
-        }
-
-
-        return $this->render('TrackBundle:Track:load_track.html.twig', ['message'=>$message]);
-
-    }
+//    }
 }

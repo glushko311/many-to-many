@@ -276,13 +276,6 @@ class Filesystem
         }
 
         if (true !== @rename($origin, $target)) {
-            if (is_dir($origin)) {
-                // See https://bugs.php.net/bug.php?id=54097 & http://php.net/manual/en/function.rename.php#113943
-                $this->mirror($origin, $target, null, array('override' => $overwrite, 'delete' => $overwrite));
-                $this->remove($origin);
-
-                return;
-            }
             throw new IOException(sprintf('Cannot rename "%s" to "%s".', $origin, $target), 0, null, $target);
         }
     }
@@ -452,31 +445,6 @@ class Filesystem
         // Split the paths into arrays
         $startPathArr = explode('/', trim($startPath, '/'));
         $endPathArr = explode('/', trim($endPath, '/'));
-
-        if ('/' !== $startPath[0]) {
-            array_shift($startPathArr);
-        }
-
-        if ('/' !== $endPath[0]) {
-            array_shift($endPathArr);
-        }
-
-        $normalizePathArray = function ($pathSegments) {
-            $result = array();
-
-            foreach ($pathSegments as $segment) {
-                if ('..' === $segment) {
-                    array_pop($result);
-                } else {
-                    $result[] = $segment;
-                }
-            }
-
-            return $result;
-        };
-
-        $startPathArr = $normalizePathArray($startPathArr);
-        $endPathArr = $normalizePathArray($endPathArr);
 
         // Find for which directory the common path stops
         $index = 0;
@@ -678,8 +646,7 @@ class Filesystem
             throw new IOException(sprintf('Failed to write file "%s".', $filename), 0, null, $filename);
         }
 
-        @chmod($tmpFile, file_exists($filename) ? fileperms($filename) : 0666 & ~umask());
-
+        @chmod($tmpFile, 0666 & ~umask());
         $this->rename($tmpFile, $filename, true);
     }
 

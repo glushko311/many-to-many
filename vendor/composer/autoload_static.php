@@ -18,9 +18,12 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
     );
 
     public static $prefixLengthsPsr4 = array (
+        'V' => 
+        array (
+            'Vich\\UploaderBundle\\' => 20,
+        ),
         'T' => 
         array (
-            'Twig\\' => 5,
             'Tests\\' => 6,
         ),
         'S' => 
@@ -34,6 +37,7 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
             'Symfony\\Bundle\\MonologBundle\\' => 29,
             'Symfony\\Bundle\\' => 15,
             'Symfony\\Bridge\\Twig\\' => 20,
+            'Symfony\\Bridge\\Swiftmailer\\' => 27,
             'Symfony\\Bridge\\ProxyManager\\' => 28,
             'Symfony\\Bridge\\PhpUnit\\' => 23,
             'Symfony\\Bridge\\Monolog\\' => 23,
@@ -60,16 +64,15 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
             'Doctrine\\Instantiator\\' => 22,
             'Doctrine\\Common\\Cache\\' => 22,
             'Doctrine\\Common\\' => 16,
-            'Doctrine\\Bundle\\FixturesBundle\\' => 31,
             'Doctrine\\Bundle\\DoctrineCacheBundle\\' => 36,
             'Doctrine\\Bundle\\DoctrineBundle\\' => 31,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Twig\\' => 
+        'Vich\\UploaderBundle\\' => 
         array (
-            0 => __DIR__ . '/..' . '/twig/twig/src',
+            0 => __DIR__ . '/..' . '/vich/uploader-bundle',
         ),
         'Tests\\' => 
         array (
@@ -110,6 +113,10 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
         'Symfony\\Bridge\\Twig\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/symfony/src/Symfony/Bridge/Twig',
+        ),
+        'Symfony\\Bridge\\Swiftmailer\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/symfony/src/Symfony/Bridge/Swiftmailer',
         ),
         'Symfony\\Bridge\\ProxyManager\\' => 
         array (
@@ -167,10 +174,6 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
         array (
             0 => __DIR__ . '/..' . '/doctrine/common/lib/Doctrine/Common',
         ),
-        'Doctrine\\Bundle\\FixturesBundle\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/doctrine/doctrine-fixtures-bundle',
-        ),
         'Doctrine\\Bundle\\DoctrineCacheBundle\\' => 
         array (
             0 => __DIR__ . '/..' . '/doctrine/doctrine-cache-bundle',
@@ -200,6 +203,13 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
                 0 => __DIR__ . '/..' . '/sensiolabs/security-checker',
             ),
         ),
+        'M' => 
+        array (
+            'Metadata\\' => 
+            array (
+                0 => __DIR__ . '/..' . '/jms/metadata/src',
+            ),
+        ),
         'D' => 
         array (
             'Doctrine\\ORM\\' => 
@@ -217,10 +227,6 @@ class ComposerStaticInit251fe797206cd73455892438ff5e2f47
             'Doctrine\\Common\\Inflector\\' => 
             array (
                 0 => __DIR__ . '/..' . '/doctrine/inflector/lib',
-            ),
-            'Doctrine\\Common\\DataFixtures' => 
-            array (
-                0 => __DIR__ . '/..' . '/doctrine/data-fixtures/lib',
             ),
             'Doctrine\\Common\\Collections\\' => 
             array (

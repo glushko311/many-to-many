@@ -84,6 +84,7 @@
   'TrackBundle:Track:members_to_track.html.twig' => __DIR__.'/../../../src/TrackBundle/Resources/views/Track/members_to_track.html.twig',
   'TrackBundle:Track:success.html.twig' => __DIR__.'/../../../src/TrackBundle/Resources/views/Track/success.html.twig',
   'TrackBundle:Track:load_track.html.twig' => __DIR__.'/../../../src/TrackBundle/Resources/views/Track/load_track.html.twig',
+  'VichUploaderBundle:Form:fields.html.twig' => __DIR__.'/../../../vendor/vich/uploader-bundle/Resources/views/Form/fields.html.twig',
   'DebugBundle:Profiler:dump.html.twig' => __DIR__.'/../../../vendor/symfony/symfony/src/Symfony/Bundle/DebugBundle/Resources/views/Profiler/dump.html.twig',
   'WebProfilerBundle:Collector:form.html.twig' => __DIR__.'/../../../vendor/symfony/symfony/src/Symfony/Bundle/WebProfilerBundle/Resources/views/Collector/form.html.twig',
   'WebProfilerBundle:Collector:exception.css.twig' => __DIR__.'/../../../vendor/symfony/symfony/src/Symfony/Bundle/WebProfilerBundle/Resources/views/Collector/exception.css.twig',

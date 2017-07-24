@@ -12,6 +12,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 use TrackBundle\Entity\Member;
 
+use Symfony\Component\HttpFoundation\File\File;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
 /**
  * Class Track
  * @package TrackBundle\Entity
@@ -42,6 +46,9 @@ class Track {
     public function __construct(){
         $this->members = new ArrayCollection();
     }
+
+
+
 
     /**
      * Get id

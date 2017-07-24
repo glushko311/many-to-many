@@ -8,7 +8,6 @@ public static function getSubscribedEvents();
 }
 namespace Symfony\Component\HttpKernel\EventListener
 {
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -197,7 +196,7 @@ return $this->started;
 }
 public function setOptions(array $options)
 {
-$validOptions = array_flip(array('cache_limiter','cookie_domain','cookie_httponly','cookie_lifetime','cookie_path','cookie_secure','entropy_file','entropy_length','gc_divisor','gc_maxlifetime','gc_probability','hash_bits_per_character','hash_function','name','referer_check','serialize_handler','use_strict_mode','use_cookies','use_only_cookies','use_trans_sid','upload_progress.enabled','upload_progress.cleanup','upload_progress.prefix','upload_progress.name','upload_progress.freq','upload_progress.min-freq','url_rewriter.tags','sid_length','sid_bits_per_character','trans_sid_hosts','trans_sid_tags',
+$validOptions = array_flip(array('cache_limiter','cookie_domain','cookie_httponly','cookie_lifetime','cookie_path','cookie_secure','entropy_file','entropy_length','gc_divisor','gc_maxlifetime','gc_probability','hash_bits_per_character','hash_function','name','referer_check','serialize_handler','use_cookies','use_only_cookies','use_trans_sid','upload_progress.enabled','upload_progress.cleanup','upload_progress.prefix','upload_progress.name','upload_progress.freq','upload_progress.min-freq','url_rewriter.tags',
 ));
 foreach ($options as $key => $value) {
 if (isset($validOptions[$key])) {
@@ -815,7 +814,6 @@ use Psr\Cache\CacheItemInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\Cache\Exception\InvalidArgumentException;
 abstract class AbstractAdapter implements AdapterInterface, LoggerAwareInterface
@@ -889,9 +887,7 @@ if (!self::$apcuSupported) {
 return $fs;
 }
 $apcu = new ApcuAdapter($namespace, (int) $defaultLifetime / 5, $version);
-if ('cli'=== PHP_SAPI && !ini_get('apc.enable_cli')) {
-$apcu->setLogger(new NullLogger());
-} elseif (null !== $logger) {
+if (null !== $logger) {
 $apcu->setLogger($logger);
 }
 return new ChainAdapter(array($apcu, $fs));
@@ -1093,9 +1089,6 @@ private function generateItems($items, &$keys)
 $f = $this->createCacheItem;
 try {
 foreach ($items as $id => $value) {
-if (!isset($keys[$id])) {
-$id = key($keys);
-}
 $key = $keys[$id];
 unset($keys[$id]);
 yield $key => $f($key, $value, true);
@@ -1121,7 +1114,7 @@ class ApcuAdapter extends AbstractAdapter
 {
 public static function isSupported()
 {
-return function_exists('apcu_fetch') && ini_get('apc.enabled');
+return function_exists('apcu_fetch') && ini_get('apc.enabled') && !('cli'=== PHP_SAPI && !ini_get('apc.enable_cli'));
 }
 public function __construct($namespace ='', $defaultLifetime = 0, $version = null)
 {
@@ -1135,7 +1128,7 @@ parent::__construct($namespace, $defaultLifetime);
 if (null !== $version) {
 CacheItem::validateKey($version);
 if (!apcu_exists($version.'@'.$namespace)) {
-$this->doClear($namespace);
+$this->clear($namespace);
 apcu_add($version.'@'.$namespace, null);
 }
 }
@@ -1143,7 +1136,7 @@ apcu_add($version.'@'.$namespace, null);
 protected function doFetch(array $ids)
 {
 try {
-return apcu_fetch($ids) ?: array();
+return apcu_fetch($ids);
 } catch (\Error $e) {
 throw new \ErrorException($e->getMessage(), $e->getCode(), E_ERROR, $e->getFile(), $e->getLine());
 }
@@ -1154,7 +1147,7 @@ return apcu_exists($id);
 }
 protected function doClear($namespace)
 {
-return isset($namespace[0]) && class_exists('APCuIterator', false) && ('cli'!== PHP_SAPI || ini_get('apc.enable_cli'))
+return isset($namespace[0]) && class_exists('APCuIterator', false)
 ? apcu_delete(new \APCuIterator(sprintf('/^%s/', preg_quote($namespace,'/')), APC_ITER_KEY))
 : apcu_clear_cache();
 }
@@ -1168,10 +1161,7 @@ return true;
 protected function doSave(array $values, $lifetime)
 {
 try {
-if (false === $failures = apcu_store($values, null, $lifetime)) {
-$failures = $values;
-}
-return array_keys($failures);
+return array_keys(apcu_store($values, null, $lifetime));
 } catch (\Error $e) {
 } catch (\Exception $e) {
 }
@@ -1193,23 +1183,25 @@ private function init($namespace, $directory)
 {
 if (!isset($directory[0])) {
 $directory = sys_get_temp_dir().'/symfony-cache';
-} else {
-$directory = realpath($directory) ?: $directory;
 }
 if (isset($namespace[0])) {
 if (preg_match('#[^-+_.A-Za-z0-9]#', $namespace, $match)) {
 throw new InvalidArgumentException(sprintf('Namespace contains "%s" but only characters in [-+_.A-Za-z0-9] are allowed.', $match[0]));
 }
-$directory .= DIRECTORY_SEPARATOR.$namespace;
+$directory .='/'.$namespace;
 }
-if (!file_exists($directory)) {
+if (!file_exists($dir = $directory.'/.')) {
 @mkdir($directory, 0777, true);
 }
-$directory .= DIRECTORY_SEPARATOR;
-if ('\\'=== DIRECTORY_SEPARATOR && strlen($directory) > 234) {
+if (false === $dir = realpath($dir) ?: (file_exists($dir) ? $dir : false)) {
+throw new InvalidArgumentException(sprintf('Cache directory does not exist (%s)', $directory));
+}
+$dir .= DIRECTORY_SEPARATOR;
+if ('\\'=== DIRECTORY_SEPARATOR && strlen($dir) > 234) {
 throw new InvalidArgumentException(sprintf('Cache directory too long (%s)', $directory));
 }
-$this->directory = $directory;
+$this->directory = $dir;
+$this->tmp = $this->directory.uniqid('', true);
 }
 protected function doClear($namespace)
 {
@@ -1230,19 +1222,17 @@ return $ok;
 }
 private function write($file, $data, $expiresAt = null)
 {
-set_error_handler(__CLASS__.'::throwError');
-try {
-if (null === $this->tmp) {
-$this->tmp = $this->directory.uniqid('', true);
+if (false === @file_put_contents($this->tmp, $data)) {
+return false;
 }
-file_put_contents($this->tmp, $data);
 if (null !== $expiresAt) {
-touch($this->tmp, $expiresAt);
+@touch($this->tmp, $expiresAt);
 }
-return rename($this->tmp, $file);
-} finally {
-restore_error_handler();
+if (@rename($this->tmp, $file)) {
+return true;
 }
+@unlink($this->tmp);
+return false;
 }
 private function getFile($id, $mkdir = false)
 {
@@ -1252,17 +1242,6 @@ if ($mkdir && !file_exists($dir)) {
 @mkdir($dir, 0777, true);
 }
 return $dir.substr($hash, 2, 20);
-}
-public static function throwError($type, $message, $file, $line)
-{
-throw new \ErrorException($message, 0, $type, $file, $line);
-}
-public function __destruct()
-{
-parent::__destruct();
-if (null !== $this->tmp && file_exists($this->tmp)) {
-unlink($this->tmp);
-}
 }
 }
 }
@@ -2094,7 +2073,7 @@ return $this->mergeDefaults($attributes, $route->getDefaults());
 }
 protected function handleRouteRequirements($pathinfo, $name, Route $route)
 {
-if ($route->getCondition() && !$this->getExpressionLanguage()->evaluate($route->getCondition(), array('context'=> $this->context,'request'=> $this->request ?: $this->createRequest($pathinfo)))) {
+if ($route->getCondition() && !$this->getExpressionLanguage()->evaluate($route->getCondition(), array('context'=> $this->context,'request'=> $this->request))) {
 return array(self::REQUIREMENT_MISMATCH, null);
 }
 $scheme = $this->context->getScheme();
@@ -2119,14 +2098,6 @@ throw new \RuntimeException('Unable to use expressions as the Symfony Expression
 $this->expressionLanguage = new ExpressionLanguage(null, $this->expressionLanguageProviders);
 }
 return $this->expressionLanguage;
-}
-protected function createRequest($pathinfo)
-{
-if (!class_exists('Symfony\Component\HttpFoundation\Request')) {
-return null;
-}
-return Request::create($this->context->getScheme().'://'.$this->context->getHost().$this->context->getBaseUrl().$pathinfo, $this->context->getMethod(), $this->context->getParameters(), array(), array(), array('SCRIPT_FILENAME'=> $this->context->getBaseUrl(),'SCRIPT_NAME'=> $this->context->getBaseUrl(),
-));
 }
 }
 }
@@ -2155,7 +2126,7 @@ return $parameters;
 }
 protected function handleRouteRequirements($pathinfo, $name, Route $route)
 {
-if ($route->getCondition() && !$this->getExpressionLanguage()->evaluate($route->getCondition(), array('context'=> $this->context,'request'=> $this->request ?: $this->createRequest($pathinfo)))) {
+if ($route->getCondition() && !$this->getExpressionLanguage()->evaluate($route->getCondition(), array('context'=> $this->context,'request'=> $this->request))) {
 return array(self::REQUIREMENT_MISMATCH, null);
 }
 $scheme = $this->context->getScheme();
@@ -2309,7 +2280,7 @@ CacheItem::class
 }
 public static function create($file, CacheItemPoolInterface $fallbackPool)
 {
-if ((\PHP_VERSION_ID >= 70000 && ini_get('opcache.enable')) || defined('HHVM_VERSION')) {
+if ((PHP_VERSION_ID >= 70000 && ini_get('opcache.enable')) || defined('HHVM_VERSION')) {
 if (!$fallbackPool instanceof AdapterInterface) {
 $fallbackPool = new ProxyAdapter($fallbackPool);
 }
@@ -2376,7 +2347,7 @@ $dump .="\n);\n";
 $dump = str_replace("' . \"\\0\" . '","\0", $dump);
 $tmpFile = uniqid($this->file, true);
 file_put_contents($tmpFile, $dump);
-@chmod($tmpFile, 0666 & ~umask());
+@chmod($tmpFile, 0666);
 unset($serialized, $unserialized, $value, $dump);
 @rename($tmpFile, $this->file);
 $this->values = (include $this->file) ?: array();
@@ -3038,14 +3009,14 @@ unset($this->privates[$id]);
 public function has($id)
 {
 for ($i = 2;;) {
-if (isset($this->privates[$id])) {
-@trigger_error(sprintf('Checking for the existence of the "%s" private service is deprecated since Symfony 3.2 and won\'t be supported anymore in Symfony 4.0.', $id), E_USER_DEPRECATED);
-}
 if ('service_container'=== $id
 || isset($this->aliases[$id])
 || isset($this->services[$id])
 ) {
 return true;
+}
+if (isset($this->privates[$id])) {
+@trigger_error(sprintf('Checking for the existence of the "%s" private service is deprecated since Symfony 3.2 and won\'t be supported anymore in Symfony 4.0.', $id), E_USER_DEPRECATED);
 }
 if (isset($this->methodMap[$id])) {
 return true;
@@ -3064,9 +3035,6 @@ return false;
 public function get($id, $invalidBehavior = self::EXCEPTION_ON_INVALID_REFERENCE)
 {
 for ($i = 2;;) {
-if (isset($this->privates[$id])) {
-@trigger_error(sprintf('Requesting the "%s" private service is deprecated since Symfony 3.2 and won\'t be supported anymore in Symfony 4.0.', $id), E_USER_DEPRECATED);
-}
 if ('service_container'=== $id) {
 return $this;
 }
@@ -3101,6 +3069,9 @@ $alternatives[] = $knownId;
 throw new ServiceNotFoundException($id, null, null, $alternatives);
 }
 return;
+}
+if (isset($this->privates[$id])) {
+@trigger_error(sprintf('Requesting the "%s" private service is deprecated since Symfony 3.2 and won\'t be supported anymore in Symfony 4.0.', $id), E_USER_DEPRECATED);
 }
 $this->loading[$id] = true;
 try {
@@ -3248,7 +3219,7 @@ return $priority;
 }
 public function hasListeners($eventName = null)
 {
-return (bool) $this->getListeners($eventName);
+return (bool) count($this->getListeners($eventName));
 }
 public function addListener($eventName, $listener, $priority = 0)
 {
@@ -3350,7 +3321,7 @@ parent::removeListener($eventName, $listener);
 public function hasListeners($eventName = null)
 {
 if (null === $eventName) {
-return $this->listenerIds || $this->listeners || parent::hasListeners();
+return (bool) count($this->listenerIds) || (bool) count($this->listeners);
 }
 if (isset($this->listenerIds[$eventName])) {
 return true;
@@ -4914,7 +4885,6 @@ public function getListeners(Request $request);
 }
 namespace Symfony\Bundle\SecurityBundle\Security
 {
-use Symfony\Bundle\SecurityBundle\Security\FirewallContext;
 use Symfony\Component\Security\Http\FirewallMapInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -4922,10 +4892,12 @@ class FirewallMap implements FirewallMapInterface
 {
 protected $container;
 protected $map;
+private $contexts;
 public function __construct(ContainerInterface $container, array $map)
 {
 $this->container = $container;
 $this->map = $map;
+$this->contexts = new \SplObjectStorage();
 }
 public function getListeners(Request $request)
 {
@@ -4945,19 +4917,12 @@ return $context->getConfig();
 }
 private function getFirewallContext(Request $request)
 {
-if ($request->attributes->has('_firewall_context')) {
-$storedContextId = $request->attributes->get('_firewall_context');
-foreach ($this->map as $contextId => $requestMatcher) {
-if ($contextId === $storedContextId) {
-return $this->container->get($contextId);
-}
-}
-$request->attributes->remove('_firewall_context');
+if ($this->contexts->contains($request)) {
+return $this->contexts[$request];
 }
 foreach ($this->map as $contextId => $requestMatcher) {
 if (null === $requestMatcher || $requestMatcher->matches($request)) {
-$request->attributes->set('_firewall_context', $contextId);
-return $this->container->get($contextId);
+return $this->contexts[$request] = $this->container->get($contextId);
 }
 }
 }
@@ -5073,11 +5038,11 @@ namespace
 {
 class Twig_Environment
 {
-const VERSION ='1.34.4';
-const VERSION_ID = 13404;
+const VERSION ='1.31.0';
+const VERSION_ID = 13100;
 const MAJOR_VERSION = 1;
-const MINOR_VERSION = 34;
-const RELEASE_VERSION = 4;
+const MINOR_VERSION = 31;
+const RELEASE_VERSION = 0;
 const EXTRA_VERSION ='';
 protected $charset;
 protected $loader;
@@ -5297,7 +5262,7 @@ return $this->loadedTemplates[$cls] = new $cls($this);
 }
 public function createTemplate($template)
 {
-$name = sprintf('__string_template__%s', hash('sha256', $template, false));
+$name = sprintf('__string_template__%s', hash('sha256', uniqid(mt_rand(), true), false));
 $loader = new Twig_Loader_Chain(array(
 new Twig_Loader_Array(array($name => $template)),
 $current = $this->getLoader(),
@@ -5440,7 +5405,7 @@ throw new Twig_Error_Syntax(sprintf('An exception has been thrown during the com
 }
 public function setLoader(Twig_LoaderInterface $loader)
 {
-if (!$loader instanceof Twig_SourceContextLoaderInterface && 0 !== strpos(get_class($loader),'Mock_')) {
+if (!$loader instanceof Twig_SourceContextLoaderInterface && 0 !== strpos(get_class($loader),'Mock_Twig_LoaderInterface')) {
 @trigger_error(sprintf('Twig loader "%s" should implement Twig_SourceContextLoaderInterface since version 1.27.', get_class($loader)), E_USER_DEPRECATED);
 }
 $this->loader = $loader;
@@ -5476,10 +5441,6 @@ $extension->initRuntime($this);
 public function hasExtension($class)
 {
 $class = ltrim($class,'\\');
-if (!isset($this->extensionsByClass[$class]) && class_exists($class, false)) {
-$class = new ReflectionClass($class);
-$class = $class->name;
-}
 if (isset($this->extensions[$class])) {
 if ($class !== get_class($this->extensions[$class])) {
 @trigger_error(sprintf('Referencing the "%s" extension by its name (defined by getName()) is deprecated since 1.26 and will be removed in Twig 2.0. Use the Fully Qualified Extension Class Name instead.', $class), E_USER_DEPRECATED);
@@ -5495,10 +5456,6 @@ $this->runtimeLoaders[] = $loader;
 public function getExtension($class)
 {
 $class = ltrim($class,'\\');
-if (!isset($this->extensionsByClass[$class]) && class_exists($class, false)) {
-$class = new ReflectionClass($class);
-$class = $class->name;
-}
 if (isset($this->extensions[$class])) {
 if ($class !== get_class($this->extensions[$class])) {
 @trigger_error(sprintf('Referencing the "%s" extension by its name (defined by getName()) is deprecated since 1.26 and will be removed in Twig 2.0. Use the Fully Qualified Extension Class Name instead.', $class), E_USER_DEPRECATED);
@@ -5546,10 +5503,6 @@ if ($this->extensionInitialized) {
 throw new LogicException(sprintf('Unable to remove extension "%s" as extensions have already been initialized.', $name));
 }
 $class = ltrim($name,'\\');
-if (!isset($this->extensionsByClass[$class]) && class_exists($class, false)) {
-$class = new ReflectionClass($class);
-$class = $class->name;
-}
 if (isset($this->extensions[$class])) {
 if ($class !== get_class($this->extensions[$class])) {
 @trigger_error(sprintf('Referencing the "%s" extension by its name (defined by getName()) is deprecated since 1.26 and will be removed in Twig 2.0. Use the Fully Qualified Extension Class Name instead.', $class), E_USER_DEPRECATED);
@@ -5906,7 +5859,6 @@ $this->baseTemplateClass,
 $this->optionsHash = implode(':', $hashParts);
 }
 }
-class_alias('Twig_Environment','Twig\Environment', false);
 }
 namespace
 {
@@ -5922,8 +5874,6 @@ public function getOperators();
 public function getGlobals();
 public function getName();
 }
-class_alias('Twig_ExtensionInterface','Twig\Extension\ExtensionInterface', false);
-class_exists('Twig_Environment');
 }
 namespace
 {
@@ -5965,13 +5915,11 @@ public function getName()
 return get_class($this);
 }
 }
-class_alias('Twig_Extension','Twig\Extension\AbstractExtension', false);
-class_exists('Twig_Environment');
 }
 namespace
 {
 if (!defined('ENT_SUBSTITUTE')) {
-define('ENT_SUBSTITUTE', 8);
+define('ENT_SUBSTITUTE', 0);
 }
 class Twig_Extension_Core extends Twig_Extension
 {
@@ -6058,7 +6006,7 @@ new Twig_SimpleFilter('capitalize','twig_capitalize_string_filter', array('needs
 new Twig_SimpleFilter('upper','strtoupper'),
 new Twig_SimpleFilter('lower','strtolower'),
 new Twig_SimpleFilter('striptags','strip_tags'),
-new Twig_SimpleFilter('trim','twig_trim_filter'),
+new Twig_SimpleFilter('trim','trim'),
 new Twig_SimpleFilter('nl2br','nl2br', array('pre_escape'=>'html','is_safe'=> array('html'))),
 new Twig_SimpleFilter('join','twig_join_filter'),
 new Twig_SimpleFilter('split','twig_split_filter', array('needs_environment'=> true)),
@@ -6457,22 +6405,6 @@ return false;
 }
 return false;
 }
-function twig_trim_filter($string, $characterMask = null, $side ='both')
-{
-if (null === $characterMask) {
-$characterMask =" \t\n\r\0\x0B";
-}
-switch ($side) {
-case'both':
-return trim($string, $characterMask);
-case'left':
-return ltrim($string, $characterMask);
-case'right':
-return rtrim($string, $characterMask);
-default:
-throw new Twig_Error_Runtime('Trimming side must be "left", "right" or "both".');
-}
-}
 function twig_escape_filter(Twig_Environment $env, $string, $strategy ='html', $charset = null, $autoescape = false)
 {
 if ($autoescape && $string instanceof Twig_Markup) {
@@ -6490,8 +6422,15 @@ $charset = $env->getCharset();
 }
 switch ($strategy) {
 case'html':
-static $htmlspecialcharsCharsets = array('ISO-8859-1'=> true,'ISO8859-1'=> true,'ISO-8859-15'=> true,'ISO8859-15'=> true,'utf-8'=> true,'UTF-8'=> true,'CP866'=> true,'IBM866'=> true,'866'=> true,'CP1251'=> true,'WINDOWS-1251'=> true,'WIN-1251'=> true,'1251'=> true,'CP1252'=> true,'WINDOWS-1252'=> true,'1252'=> true,'KOI8-R'=> true,'KOI8-RU'=> true,'KOI8R'=> true,'BIG5'=> true,'950'=> true,'GB2312'=> true,'936'=> true,'BIG5-HKSCS'=> true,'SHIFT_JIS'=> true,'SJIS'=> true,'932'=> true,'EUC-JP'=> true,'EUCJP'=> true,'ISO8859-5'=> true,'ISO-8859-5'=> true,'MACROMAN'=> true,
+static $htmlspecialcharsCharsets;
+if (null === $htmlspecialcharsCharsets) {
+if (defined('HHVM_VERSION')) {
+$htmlspecialcharsCharsets = array('utf-8'=> true,'UTF-8'=> true);
+} else {
+$htmlspecialcharsCharsets = array('ISO-8859-1'=> true,'ISO8859-1'=> true,'ISO-8859-15'=> true,'ISO8859-15'=> true,'utf-8'=> true,'UTF-8'=> true,'CP866'=> true,'IBM866'=> true,'866'=> true,'CP1251'=> true,'WINDOWS-1251'=> true,'WIN-1251'=> true,'1251'=> true,'CP1252'=> true,'WINDOWS-1252'=> true,'1252'=> true,'KOI8-R'=> true,'KOI8-RU'=> true,'KOI8R'=> true,'BIG5'=> true,'950'=> true,'GB2312'=> true,'936'=> true,'BIG5-HKSCS'=> true,'SHIFT_JIS'=> true,'SJIS'=> true,'932'=> true,'EUC-JP'=> true,'EUCJP'=> true,'ISO8859-5'=> true,'ISO-8859-5'=> true,'MACROMAN'=> true,
 );
+}
+}
 if (isset($htmlspecialcharsCharsets[$charset])) {
 return htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE, $charset);
 }
@@ -6588,11 +6527,7 @@ if (!isset($char[1])) {
 return'\\x'.strtoupper(substr('00'.bin2hex($char), -2));
 }
 $char = twig_convert_encoding($char,'UTF-16BE','UTF-8');
-$char = strtoupper(bin2hex($char));
-if (4 >= strlen($char)) {
-return sprintf('\u%04s', $char);
-}
-return sprintf('\u%04s\u%04s', substr($char, 0, -4), substr($char, -4));
+return'\\u'.strtoupper(substr('0000'.bin2hex($char), -4));
 }
 function _twig_escape_css_callback($matches)
 {
@@ -6635,19 +6570,7 @@ return sprintf('&#x%s;', $hex);
 if (function_exists('mb_get_info')) {
 function twig_length_filter(Twig_Environment $env, $thing)
 {
-if (null === $thing) {
-return 0;
-}
-if (is_scalar($thing)) {
-return mb_strlen($thing, $env->getCharset());
-}
-if (is_object($thing) && method_exists($thing,'__toString') && !$thing instanceof \Countable) {
-return mb_strlen((string) $thing, $env->getCharset());
-}
-if ($thing instanceof \Countable || is_array($thing)) {
-return count($thing);
-}
-return 1;
+return is_scalar($thing) ? mb_strlen($thing, $env->getCharset()) : count($thing);
 }
 function twig_upper_filter(Twig_Environment $env, $string)
 {
@@ -6681,19 +6604,7 @@ return ucfirst(strtolower($string));
 else {
 function twig_length_filter(Twig_Environment $env, $thing)
 {
-if (null === $thing) {
-return 0;
-}
-if (is_scalar($thing)) {
-return strlen($thing);
-}
-if (is_object($thing) && method_exists($thing,'__toString') && !$thing instanceof \Countable) {
-return strlen((string) $thing);
-}
-if ($thing instanceof \Countable || is_array($thing)) {
-return count($thing);
-}
-return 1;
+return is_scalar($thing) ? strlen($thing) : count($thing);
 }
 function twig_title_string_filter(Twig_Environment $env, $string)
 {
@@ -6715,9 +6626,6 @@ function twig_test_empty($value)
 {
 if ($value instanceof Countable) {
 return 0 == count($value);
-}
-if (is_object($value) && method_exists($value,'__toString')) {
-return''=== (string) $value;
 }
 return''=== $value || false === $value || null === $value || array() === $value;
 }
@@ -6811,7 +6719,6 @@ array_fill(0, $fillCount, $fill)
 }
 return $result;
 }
-class_alias('Twig_Extension_Core','Twig\Extension\CoreExtension', false);
 }
 namespace
 {
@@ -6867,7 +6774,6 @@ function twig_raw_filter($string)
 {
 return $string;
 }
-class_alias('Twig_Extension_Escaper','Twig\Extension\EscaperExtension', false);
 }
 namespace
 {
@@ -6887,7 +6793,6 @@ public function getName()
 return'optimizer';
 }
 }
-class_alias('Twig_Extension_Optimizer','Twig\Extension\OptimizerExtension', false);
 }
 namespace
 {
@@ -6897,7 +6802,6 @@ public function getSource($name);
 public function getCacheKey($name);
 public function isFresh($name, $time);
 }
-class_alias('Twig_LoaderInterface','Twig\Loader\LoaderInterface', false);
 }
 namespace
 {
@@ -6919,7 +6823,6 @@ public function count()
 return function_exists('mb_get_info') ? mb_strlen($this->content, $this->charset) : strlen($this->content);
 }
 }
-class_alias('Twig_Markup','Twig\Markup', false);
 }
 namespace
 {
@@ -7267,13 +7170,11 @@ $lcName = substr($lcName, 2);
 } else {
 continue;
 }
-if ($name) {
 if (!isset($cache[$name])) {
 $cache[$name] = $method;
 }
 if (!isset($cache[$lcName])) {
 $cache[$lcName] = $method;
-}
 }
 }
 self::$cache[$class] = $cache;
@@ -7329,5 +7230,4 @@ return $ret ===''?'': new Twig_Markup($ret, $this->env->getCharset());
 return $ret;
 }
 }
-class_alias('Twig_Template','Twig\Template', false);
 }
