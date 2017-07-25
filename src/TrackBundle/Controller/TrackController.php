@@ -28,6 +28,9 @@ class TrackController  extends Controller{
     /**
      * @Route(
      *"/track/{track_id}",
+     * defaults={
+     * "track_id" : "1"
+     * },
      * requirements={
      *  "track_id":"\d+"
      * }
@@ -47,6 +50,9 @@ class TrackController  extends Controller{
 //        $em = $this->getDoctrine();
 //        $trackRepo = $em->getRepository("TrackBundle:Track");
 //        $track = $trackRepo->find($track_id);
+//        if(!$track){
+//            throw $this->createNotFoundException('Маршрут не существует');
+//        }
         //use simple function
 
 
@@ -123,33 +129,4 @@ class TrackController  extends Controller{
        return $this->render('TrackBundle:Track:success.html.twig');
    }
 
-//    /**
-//     * @ROUTE(
-//     * "/admin/loadtrack"
-//     * )
-//     * @param Request $request
-//     * @return \Symfony\Component\HttpFoundation\Response
-//     */
-//    public function loadTrackAction(Request $request){
-//        $trackWay = $request->request->get('track');
-//        $message = '';
-//
-//        $track = new Track();
-////        $track->setTask('Write a blog post');
-////        $task->setDueDate(new \DateTime('tomorrow'));
-//
-//        $form = $this->createFormBuilder($track)
-//        ->add('track', TextType::class)
-//        ->add('track_file', VichImageType::class)
-//        ->add('save', SubmitType::class, array('label' => 'Create new track'))
-//        ->getForm();
-//
-//        return $this->render('TrackBundle:Track:load_track.html.twig', array(
-//            'form' => $form->createView(),
-//        ));
-
-
-       // return $this->render('TrackBundle:Track:load_track.html.twig', ['message'=>$message]);
-
-//    }
 }

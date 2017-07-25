@@ -50,14 +50,25 @@ class appProdProjectContainerUrlMatcher extends Symfony\Bundle\FrameworkBundle\R
 
             // track_track_addmemberstotrack
             if (preg_match('#^/track/(?P<track_id>\\d+)/add_members$#s', $pathinfo, $matches)) {
-                if (!in_array($this->context->getMethod(), array('GET', 'POST', 'HEAD'))) {
-                    $allow = array_merge($allow, array('GET', 'POST', 'HEAD'));
+                if (!in_array($this->context->getMethod(), array('GET', 'HEAD'))) {
+                    $allow = array_merge($allow, array('GET', 'HEAD'));
                     goto not_track_track_addmemberstotrack;
                 }
 
                 return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_addmemberstotrack')), array (  '_controller' => 'TrackBundle\\Controller\\TrackController::addMembersToTrackAction',));
             }
             not_track_track_addmemberstotrack:
+
+            // track_track_addmembersajax
+            if (preg_match('#^/track/(?P<track_id>\\d+)/add_members$#s', $pathinfo, $matches)) {
+                if ($this->context->getMethod() != 'POST') {
+                    $allow[] = 'POST';
+                    goto not_track_track_addmembersajax;
+                }
+
+                return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_addmembersajax')), array (  '_controller' => 'TrackBundle\\Controller\\TrackController::addMembersAjaxAction',));
+            }
+            not_track_track_addmembersajax:
 
         }
 

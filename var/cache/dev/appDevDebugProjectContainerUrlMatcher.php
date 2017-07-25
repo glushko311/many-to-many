@@ -116,13 +116,13 @@ class appDevDebugProjectContainerUrlMatcher extends Symfony\Bundle\FrameworkBund
 
         if (0 === strpos($pathinfo, '/track')) {
             // track_track_showtrack
-            if (preg_match('#^/track/(?P<track_id>\\d+)$#s', $pathinfo, $matches)) {
+            if (preg_match('#^/track(?:/(?P<track_id>\\d+))?$#s', $pathinfo, $matches)) {
                 if (!in_array($this->context->getMethod(), array('GET', 'POST', 'HEAD'))) {
                     $allow = array_merge($allow, array('GET', 'POST', 'HEAD'));
                     goto not_track_track_showtrack;
                 }
 
-                return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_showtrack')), array (  '_controller' => 'TrackBundle\\Controller\\TrackController::showTrackAction',));
+                return $this->mergeDefaults(array_replace($matches, array('_route' => 'track_track_showtrack')), array (  'track_id' => '1',  '_controller' => 'TrackBundle\\Controller\\TrackController::showTrackAction',));
             }
             not_track_track_showtrack:
 
